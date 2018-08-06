@@ -159,8 +159,6 @@ def main():
 
     # Process images
     ###########################################
-    # Job builder
-    print("Building job list... ", file=sys.stderr)
     # Create DAGman file
     dagman = open(os.path.basename(args.dir) + '.dag', 'w')
 
