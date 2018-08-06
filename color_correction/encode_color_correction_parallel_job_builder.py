@@ -2,7 +2,6 @@
 import os
 import sys
 import argparse
-import datetime
 import json
 from math import ceil
 
@@ -21,9 +20,6 @@ def options():
         ValueError: if adaptor is not phenofront or dbimportexport.
         ValueError: if a metadata field is not supported.
     """
-    # Job start time
-    start_time = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    print("Starting run " + start_time + '\n', file=sys.stderr)
 
     parser = argparse.ArgumentParser(description='Parallel imaging processing with PlantCV.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
