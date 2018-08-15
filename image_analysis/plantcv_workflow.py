@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import argparse
 import numpy as np
 from scipy import ndimage as ndi
@@ -17,7 +18,7 @@ def options():
     parser.add_argument("-w", "--writeimg", help="write out images.", default=False, action="store_true")
     parser.add_argument("-r", "--result", help="result file.", required=False)
     parser.add_argument("-o", "--outdir", help="Output directory for image files.", required=False)
-    parser.add_argument("-n", "--bkg", help="Color-corrected background image.", required=True)
+    parser.add_argument("-n", "--bkg", help="JSON config file for background images.", required=True)
     parser.add_argument("-p", "--pdf", help="PDF from Naive-Bayes.", required=True)
     args = parser.parse_args()
     return args
@@ -38,8 +39,18 @@ def main():
     # read in image
     img, path, filename = pcv.readimage(filename=args.image, debug=args.debug)
 
-    # read in a background image
-    bkg, bkg_path, bkg_filename = pcv.readimage(filename=args.bkg_image, debug=args.debug)
+    # read in a background image for each zoom level
+    config_file = open(args.bkg, 'r')
+    config = json.load(config_file)
+    config_file.close()
+    if "z1500" in args.image:
+        bkg_image = config["z1500"]
+    elif "z2500" in args.image:
+        bkg_image = config["z2500"]
+    else:
+        pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
+
+    bkg, bkg_path, bkg_filename = pcv.readimage(filename=bkg_image, debug=args.debug)
 
     # Detect edges in the background image
     device, bkg_sat = pcv.rgb2gray_hsv(img=bkg, channel="s", device=device, debug=args.debug)
