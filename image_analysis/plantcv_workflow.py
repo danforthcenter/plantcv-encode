@@ -164,6 +164,16 @@ def main():
                                         mask_color="black", device=device, debug=args.debug)
     # Convert the masked image back to grayscale
     masked_img = masked_img[:, :, 0]
+    # Close off contours at the base of the plant
+    if "z1500" in args.image:
+        pt1 = (1100, 1118)
+        pt2 = (1340, 1120)
+    elif "z2500" in args.image:
+        pt1 = (1020, 1162)
+        pt2 = (1390, 1166)
+    else:
+        pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
+    masked_img = cv2.rectangle(np.copy(masked_img), pt1, pt2, (255), -1)
     closed_mask = ndi.binary_closing(masked_img.astype(bool), iterations=3)
 
     # Find objects in the masked naive Bayes mask
