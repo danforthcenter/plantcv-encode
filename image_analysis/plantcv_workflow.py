@@ -150,9 +150,9 @@ def main():
 
     # Define region of interest based on camera zoom level
     if "z1500" in args.image:
-        h = 960
+        h = 940
     elif "z2500" in args.image:
-        h = 1000
+        h = 980
     else:
         pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
     roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
