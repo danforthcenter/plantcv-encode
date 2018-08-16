@@ -164,10 +164,13 @@ def main():
                                         mask_color="black", device=device, debug=args.debug)
     # Convert the masked image back to grayscale
     masked_img = masked_img[:, :, 0]
+    closed_mask = ndi.binary_closing(masked_img.astype(bool), iterations=3)
 
     # Find objects in the masked naive Bayes mask
-    device, objects, obj_hierarchy = pcv.find_objects(img=img, mask=np.copy(masked_img), device=device,
-                                                      debug=args.debug)
+    # device, objects, obj_hierarchy = pcv.find_objects(img=img, mask=np.copy(masked_img), device=device,
+    #                                                   debug=args.debug)
+    objects, obj_hierarchy = cv2.findContours(np.copy(closed_mask.astype(np.uint8) * 255), cv2.RETR_CCOMP,
+                                              cv2.CHAIN_APPROX_NONE)[-2:]
 
     # Clean up the combined plant edges/mask image by removing filled in gaps/holes
     device += 1
@@ -176,10 +179,10 @@ def main():
     # Loop over the contours from the naive Bayes mask
     for c, contour in enumerate(objects):
         # Calculate the area of each contour
-        area = cv2.contourArea(contour)
+        # area = cv2.contourArea(contour)
         # If the contour is a hole (i.e. it has no children and it has a parent)
         # And it is not a small hole in a leaf that was not classified
-        if obj_hierarchy[0][c][2] == -1 and obj_hierarchy[0][c][3] > -1 and area > 5:
+        if obj_hierarchy[0][c][2] == -1:
             # Then fill in the contour (hole) black on the cleaned mask
             cv2.drawContours(cleaned3, objects, c, (0), -1, hierarchy=obj_hierarchy)
     if args.debug == "print":
