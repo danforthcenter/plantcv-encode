@@ -123,23 +123,23 @@ def main():
 
     # Close off broken edges and other incomplete contours
     device += 1
-    closed_features = ndi.binary_closing(combined)
+    closed_features = ndi.binary_closing(combined, structure=np.ones(3, 3))
     if args.debug == "print":
         pcv.print_image(img=closed_features, filename=str(device) + '_closed_features.png')
     elif args.debug == "plot":
         pcv.plot_image(img=closed_features, cmap="gray")
 
     # Fill in holes in contours
-    device += 1
-    fill_contours = ndi.binary_fill_holes(closed_features)
-    if args.debug == "print":
-        pcv.print_image(img=fill_contours, filename=str(device) + '_filled_contours.png')
-    elif args.debug == "plot":
-        pcv.plot_image(img=fill_contours, cmap="gray")
+    # device += 1
+    # fill_contours = ndi.binary_fill_holes(closed_features)
+    # if args.debug == "print":
+    #     pcv.print_image(img=fill_contours, filename=str(device) + '_filled_contours.png')
+    # elif args.debug == "plot":
+    #     pcv.plot_image(img=fill_contours, cmap="gray")
 
     # Use median blur to break horizontal and vertical thin edges (pot edges)
     device += 1
-    blurred_img = ndi.median_filter(fill_contours.astype(np.uint8) * 255, (3, 1))
+    blurred_img = ndi.median_filter(closed_features.astype(np.uint8) * 255, (3, 1))
     blurred_img = ndi.median_filter(blurred_img, (1, 3))
     # Remove small objects left behind by blurring
     cleaned2 = morphology.remove_small_objects(blurred_img.astype(bool), 200)
@@ -149,60 +149,60 @@ def main():
         pcv.plot_image(img=cleaned2, cmap="gray")
 
     # Define region of interest based on camera zoom level for masking the naive Bayes classified image
-    if "z1500" in args.image:
-        h = 1000
-    elif "z2500" in args.image:
-        h = 1050
-    else:
-        pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
-    roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
+    # if "z1500" in args.image:
+    #     h = 1000
+    # elif "z2500" in args.image:
+    #     h = 1050
+    # else:
+    #     pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
+    # roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
 
     # Mask the classified image to remove noisy areas prior to finding contours
-    side_mask = np.zeros(np.shape(img)[:2], dtype=np.uint8)
-    cv2.drawContours(side_mask, roi, -1, (255), -1)
-    device, masked_img = pcv.apply_mask(img=cv2.merge([mask["plant"], mask["plant"], mask["plant"]]), mask=side_mask,
-                                        mask_color="black", device=device, debug=args.debug)
+    # side_mask = np.zeros(np.shape(img)[:2], dtype=np.uint8)
+    # cv2.drawContours(side_mask, roi, -1, (255), -1)
+    # device, masked_img = pcv.apply_mask(img=cv2.merge([mask["plant"], mask["plant"], mask["plant"]]), mask=side_mask,
+    #                                     mask_color="black", device=device, debug=args.debug)
     # Convert the masked image back to grayscale
-    masked_img = masked_img[:, :, 0]
+    # masked_img = masked_img[:, :, 0]
     # Close off contours at the base of the plant
-    if "z1500" in args.image:
-        pt1 = (1100, 1118)
-        pt2 = (1340, 1120)
-    elif "z2500" in args.image:
-        pt1 = (1020, 1162)
-        pt2 = (1390, 1166)
-    else:
-        pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
-    masked_img = cv2.rectangle(np.copy(masked_img), pt1, pt2, (255), -1)
-    closed_mask = ndi.binary_closing(masked_img.astype(bool), iterations=3)
+    # if "z1500" in args.image:
+    #     pt1 = (1100, 1118)
+    #     pt2 = (1340, 1120)
+    # elif "z2500" in args.image:
+    #     pt1 = (1020, 1162)
+    #     pt2 = (1390, 1166)
+    # else:
+    #     pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
+    # masked_img = cv2.rectangle(np.copy(masked_img), pt1, pt2, (255), -1)
+    # closed_mask = ndi.binary_closing(masked_img.astype(bool), iterations=3)
 
     # Find objects in the masked naive Bayes mask
     # device, objects, obj_hierarchy = pcv.find_objects(img=img, mask=np.copy(masked_img), device=device,
     #                                                   debug=args.debug)
-    objects, obj_hierarchy = cv2.findContours(np.copy(closed_mask.astype(np.uint8) * 255), cv2.RETR_CCOMP,
-                                              cv2.CHAIN_APPROX_NONE)[-2:]
+    # objects, obj_hierarchy = cv2.findContours(np.copy(closed_mask.astype(np.uint8) * 255), cv2.RETR_CCOMP,
+    #                                           cv2.CHAIN_APPROX_NONE)[-2:]
 
     # Clean up the combined plant edges/mask image by removing filled in gaps/holes
-    device += 1
-    cleaned3 = np.copy(cleaned2)
-    cleaned3 = cleaned3.astype(np.uint8) * 255
-    # Loop over the contours from the naive Bayes mask
-    for c, contour in enumerate(objects):
-        # Calculate the area of each contour
-        # area = cv2.contourArea(contour)
-        # If the contour is a hole (i.e. it has no children and it has a parent)
-        # And it is not a small hole in a leaf that was not classified
-        if obj_hierarchy[0][c][2] == -1 and obj_hierarchy[0][c][3] > -1:
-            # Then fill in the contour (hole) black on the cleaned mask
-            cv2.drawContours(cleaned3, objects, c, (0), -1, hierarchy=obj_hierarchy)
-    if args.debug == "print":
-        pcv.print_image(img=cleaned3, filename=str(device) + '_gaps_removed.png')
-    elif args.debug == "plot":
-        pcv.plot_image(img=cleaned3, cmap="gray")
+    # device += 1
+    # cleaned3 = np.copy(cleaned2)
+    # cleaned3 = cleaned3.astype(np.uint8) * 255
+    # # Loop over the contours from the naive Bayes mask
+    # for c, contour in enumerate(objects):
+    #     # Calculate the area of each contour
+    #     # area = cv2.contourArea(contour)
+    #     # If the contour is a hole (i.e. it has no children and it has a parent)
+    #     # And it is not a small hole in a leaf that was not classified
+    #     if obj_hierarchy[0][c][2] == -1 and obj_hierarchy[0][c][3] > -1:
+    #         # Then fill in the contour (hole) black on the cleaned mask
+    #         cv2.drawContours(cleaned3, objects, c, (0), -1, hierarchy=obj_hierarchy)
+    # if args.debug == "print":
+    #     pcv.print_image(img=cleaned3, filename=str(device) + '_gaps_removed.png')
+    # elif args.debug == "plot":
+    #     pcv.plot_image(img=cleaned3, cmap="gray")
 
     # Find contours using the cleaned mask
-    device, contours, contour_hierarchy = pcv.find_objects(img=img, mask=np.copy(cleaned3), device=device,
-                                                           debug=args.debug)
+    device, contours, contour_hierarchy = pcv.find_objects(img=img, mask=np.copy(cleaned2.astype(np.uint8)),
+                                                           device=device, debug=args.debug)
 
     # Define region of interest based on camera zoom level for contour filtering
     if "z1500" in args.image:
