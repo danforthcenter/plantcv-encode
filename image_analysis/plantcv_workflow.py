@@ -150,9 +150,9 @@ def main():
 
     # Define region of interest based on camera zoom level
     if "z1500" in args.image:
-        h = 1000
+        h = 960
     elif "z2500" in args.image:
-        h = 1050
+        h = 1000
     else:
         pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
     roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
@@ -182,7 +182,7 @@ def main():
         # area = cv2.contourArea(contour)
         # If the contour is a hole (i.e. it has no children and it has a parent)
         # And it is not a small hole in a leaf that was not classified
-        if obj_hierarchy[0][c][2] == -1:
+        if obj_hierarchy[0][c][2] == -1 and obj_hierarchy[0][c][3] > -1:
             # Then fill in the contour (hole) black on the cleaned mask
             cv2.drawContours(cleaned3, objects, c, (0), -1, hierarchy=obj_hierarchy)
     if args.debug == "print":
