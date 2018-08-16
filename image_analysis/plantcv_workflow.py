@@ -148,11 +148,11 @@ def main():
     elif args.debug == "plot":
         pcv.plot_image(img=cleaned2, cmap="gray")
 
-    # Define region of interest based on camera zoom level
+    # Define region of interest based on camera zoom level for masking the naive Bayes classified image
     if "z1500" in args.image:
-        h = 940
+        h = 1000
     elif "z2500" in args.image:
-        h = 980
+        h = 1050
     else:
         pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
     roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
@@ -193,6 +193,15 @@ def main():
     # Find contours using the cleaned mask
     device, contours, contour_hierarchy = pcv.find_objects(img=img, mask=np.copy(cleaned3), device=device,
                                                            debug=args.debug)
+
+    # Define region of interest based on camera zoom level for contour filtering
+    if "z1500" in args.image:
+        h = 940
+    elif "z2500" in args.image:
+        h = 980
+    else:
+        pcv.fatal_error("Image {0} has an unsupported zoom level.".format(args.image))
+    roi, roi_hierarchy = pcv.roi.rectangle(x=300, y=150, w=1850, h=h, img=img)
 
     # Filter contours in the region of interest
     device, roi_objects, hierarchy, kept_mask, obj_area = pcv.roi_objects(img=img, roi_type='partial', roi_contour=roi,
