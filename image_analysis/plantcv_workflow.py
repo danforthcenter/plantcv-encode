@@ -123,7 +123,7 @@ def main():
 
     # Close off broken edges and other incomplete contours
     device += 1
-    closed_features = ndi.binary_closing(combined, structure=np.ones(3, 3))
+    closed_features = ndi.binary_closing(combined, structure=np.ones((3, 3)))
     if args.debug == "print":
         pcv.print_image(img=closed_features, filename=str(device) + '_closed_features.png')
     elif args.debug == "plot":
